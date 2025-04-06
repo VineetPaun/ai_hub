@@ -12,6 +12,13 @@ import {
 import { Menu, MoveRight, X } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import {
+    SignInButton,
+    SignUpButton,
+    SignedIn,
+    SignedOut,
+    UserButton,
+} from '@clerk/nextjs'
 
 function Header1() {
     const navigationItems = [
@@ -124,6 +131,13 @@ function Header1() {
                         Book a demo
                     </Button> */}
                     <div className="border-r hidden md:inline"></div>
+                    <SignedOut>
+                        <SignInButton />
+                        <SignUpButton />
+                    </SignedOut>
+                    <SignedIn>
+                        <UserButton />
+                    </SignedIn>
                     {/* <Button variant="outline">Sign in</Button>
                     <Button>Get started</Button> */}
                 </div>
