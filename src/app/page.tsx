@@ -1,4 +1,3 @@
-'use client';
 import { Button } from "@/components/ui/button";
 import { motion } from 'framer-motion';
 import { Brain, Code, Image, MessageSquare } from 'lucide-react';
@@ -53,8 +52,8 @@ export default function Home() {
     <main className="min-h-screen bg-background">
       <div className="relative overflow-hidden">
         {/* Background Pattern */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
         
-
         {/* Hero Section */}
         <div className="container mx-auto px-4 py-24 relative">
           <motion.div
