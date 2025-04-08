@@ -10,71 +10,119 @@ import {
 import { ChatMessageList } from "@/components/ui/chat-message-list";
 import { ChatInput } from "@/components/ui/chat-input";
 import React from 'react'
+import { GoogleGenAI } from "@google/genai";
+import { systemInstruction } from "@/prompt";
+// import { systemInstruction } from "@/prompt";
+
+interface Message {
+    id: number;
+    content: string;
+    sender: string;
+}
 
 const AiChatArea = () => {
-    const [messages, setMessages] = useState([
+    const [input, setInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [messages, setMessages] = useState<Message[]>([
         {
             id: 1,
             content: "Hello! How can I help you today?",
             sender: "ai",
-        },
-        {
-            id: 2,
-            content: "I have a question about the component library.",
-            sender: "user",
-        },
-        {
-            id: 3,
-            content: "Sure! I'd be happy to help. What would you like to know?",
-            sender: "ai",
-        },
+        }
     ]);
 
-    const [input, setInput] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const handleSubmit = (e: FormEvent) => {
-        e.preventDefault();
-        if (!input.trim()) return;
-
-        setMessages((prev) => [
-            ...prev,
-            {
-                id: prev.length + 1,
-                content: input,
-                sender: "user",
+    const [chat] = useState(() => {
+        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        if (!apiKey) {
+            console.error("Gemini API key is not set");
+            return null;
+        }
+        const ai = new GoogleGenAI({ apiKey });
+        return ai.chats.create({
+            model: "gemini-2.0-flash",
+            config: {
+                systemInstruction,
             },
-        ]);
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: "Hello" }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "Hello! How can I help you today?" }],
+                },
+            ],
+        });
+    });
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!input.trim() || !chat) return;
+
+        const userMessage = {
+            id: messages.length + 1,
+            content: input,
+            sender: "user",
+        };
+
+        setMessages((prev) => [...prev, userMessage]);
         setInput("");
         setIsLoading(true);
 
-        setTimeout(() => {
+        try {
+            const streamingMessage = {
+                id: messages.length + 2,
+                content: "",
+                sender: "ai",
+            };
+
+            setMessages((prev) => [...prev, streamingMessage]);
+
+            const stream = await chat.sendMessageStream({
+                message: input
+            });
+
+            setIsLoading(false);
+
+            let fullResponse = "";
+            for await (const chunk of stream) {
+                fullResponse += chunk.text;
+                setMessages((prev) => {
+                    const newMessages = [...prev];
+                    const lastMessage = newMessages[newMessages.length - 1];
+                    if (lastMessage.sender === "ai") {
+                        lastMessage.content = fullResponse;
+                    }
+                    return newMessages;
+                });
+            }
+        } catch (error) {
+            console.error("Error sending message:", error);
             setMessages((prev) => [
                 ...prev,
                 {
                     id: prev.length + 1,
-                    content: "This is an AI response to your message.",
+                    content: "Sorry, I encountered an error. Please try again.",
                     sender: "ai",
                 },
             ]);
+        } finally {
             setIsLoading(false);
-        }, 1000);
+        }
     };
 
     const handleAttachFile = () => {
-        //
+        // Implement file attachment logic
     };
 
     const handleMicrophoneClick = () => {
-        //
+        // Implement voice input logic
     };
+
     return (
-        <div className="flex flex-col min-h-screen w-full">
-            {/* <div className="flex-grow flex items-center justify-center">
-                <h1 className="text-4xl font-bold text-black dark:text-white">
-                    What can I help you ship?
-                </h1>
-            </div> */}
-            <div className="h-[400px] border bg-background rounded-lg flex flex-col">
+        <div className="flex justify-center items-center h-screen w-full pt-20">
+            <div className="w-full max-w-3xl mx-auto flex flex-col h-[85vh] bg-background rounded-lg overflow-hidden">
                 <div className="flex-1 overflow-hidden">
                     <ChatMessageList>
                         {messages.map((message) => (
