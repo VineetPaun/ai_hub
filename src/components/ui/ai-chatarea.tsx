@@ -12,7 +12,6 @@ import { ChatInput } from "@/components/ui/chat-input";
 import React from 'react'
 import { GoogleGenAI } from "@google/genai";
 import { systemInstruction } from "@/prompt";
-// import { systemInstruction } from "@/prompt";
 
 interface Message {
     id: number;
